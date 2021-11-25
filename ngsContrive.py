@@ -1,7 +1,10 @@
 import sys
 import os
 import argparse
+import subprocess
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 class Var(object):
     """docstring for Var."""
@@ -30,35 +33,54 @@ def modifySeq(fasta, variantFile):
     """
     seqdict = {rec.id : rec.seq for rec in SeqIO.parse(fasta, "fasta")}
 
+    variants=0
     offset=0
     for var in readVarFile(variantFile):
 
-        print(var.type, var.chr, var.index, var.seq)
+        # print(var.type, var.chr, var.index, var.seq)
 
         ## check index is in range
         if var.index >= len(seqdict[var.chr]):
             print(f"Index {var.index} out of range in {var.chr}.")
             continue
 
-        newseq = str(seqdict[var.chr])
+        newseq = seqdict[var.chr]
+        real_index = var.index+offset
 
         if var.type == "INDEL":
+            variants+=1
             if var.seq.startswith("-"):
                 ## deal with deletions
                 offset-=len(var.seq)
-                newseq = newseq[:var.index-1+offset] + newseq[:var.index-1+offset+len(var.seq)]
+                newseq = newseq[:real_index] + newseq[real_index+len(var.seq):]
             else:
                 ## deal with insertions
                 offset+=len(var.seq)
-                newseq = newseq[:var.index-1+offset] + var.seq + newseq[:var.index-1+offset]
+                newseq = newseq[:real_index] + var.seq + newseq[real_index:]
 
         elif var.type == "SNP":
-            newseq[var.index+offset-1] == var.seq
+            variants+=1
+            newseq = newseq[:real_index-1] + var.seq + newseq[real_index:]
 
         seqdict[var.chr] = newseq
 
+    fvar_path = f"./{os.path.splitext(os.path.basename(fasta))[0]}.var.fasta"
+    fout = open(fvar_path, "w")
     for id, seq in seqdict.items():
-        print(id, seq)
+        fout.write(f">{id}\n{seq}\n")
+
+    print(f"FASTA IN : {fasta}\nVARIANTS INTRODUCED : {variants}\nFASTA OUT : {fvar_path}\n")
+
+    return fvar_path
+
+def runART(fvar_path, artDir, prefix):
+    """ Run ART on the simulated variant file
+    """
+
+    artExec = os.path.join(artDir, "art_illumina")
+    runline = f"{artExec} -ss HS25 -i {fvar_path} -p -l 150 -f 40 -m 200 -s 10 -o {prefix}"
+
+    subprocess.run(runline, shell=True, check=True, capture_output=True)
 
 def parseArgs(argv):
     """ simple argument parser
@@ -79,7 +101,8 @@ def main(argv):
     """ Main function
     """
     args = parseArgs(argv)
-    modifySeq(args.fasta, args.variantFile)
+    fvar_path = modifySeq(args.fasta, args.variantFile)
+    runART(fvar_path, args.artDir, args.prefix)
 
 if __name__=="__main__":
     main(sys.argv)
