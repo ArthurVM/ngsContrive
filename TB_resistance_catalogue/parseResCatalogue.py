@@ -1,5 +1,6 @@
 import sys
 import os
+import subprocess
 import pandas as pd
 
 def readCSV(csv):
@@ -7,7 +8,14 @@ def readCSV(csv):
 
     fout = open(f"./{os.path.splitext(os.path.basename(csv))[0]}.var", "w")
     for index, row in df.iterrows():
-        print(f"SP NC_000962.3 {row['genome_index']} {row['alt_nt'].upper()}", file=fout)
+        varline = f"SP {row['final_annotation.Reference']} {row['final_annotation.Position']} {row['final_annotation.AlternativeNucleotide'].upper()}"
+        print(varline, file=fout)
+
+        runline = f"python3 ../ngsContrive.py -v \"{varline}\" -p {row['variant']}_ ../WD/ASM19595v2.fna /home/amorris/BioInf/art_bin_MountRainier"
+        print(runline)
+
+        subprocess.run(runline, shell=True)
+
     fout.close()
 
 def main(csv):

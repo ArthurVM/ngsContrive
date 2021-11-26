@@ -12,29 +12,38 @@ class Var(object):
     def __init__(self, varline):
         super(Var, self).__init__()
         vl_split = varline.strip("\n").split(" ")
+
+        if len(vl_split) != 4:
+            print("\nWARNING: Weird variant line. Variant lines must be formatted as:\n\tINDEL/SP chrID 1base_index seq\n")
+            exit()
+
         self.type = vl_split[0]
         self.chr = vl_split[1]
         self.index = int(vl_split[2])
         self.seq = vl_split[3]
 
-def readVarFile(variantFile):
+def readVars(vars):
     """ read in the variant file
     """
     varbox = []
 
-    with open(variantFile, "r") as fin:
-        for line in fin.readlines():
-            varbox.append(Var(line))
+    if os.path.isfile(vars):
+        with open(vars, "r") as fin:
+            for line in fin.readlines():
+                varbox.append(Var(line))
+
+    else:
+        varbox.append(Var(vars))
 
     return sorted(varbox, key=lambda x: x.index, reverse=True)
 
-def modifySeq(fasta, variantFile):
+def modifySeq(fasta, vars, prefix):
     """ introduces variants defined in a variant file into sequences found in the fasta file.
     """
     seqdict = {rec.id : rec.seq for rec in SeqIO.parse(fasta, "fasta")}
 
     variants=0
-    for var in readVarFile(variantFile):
+    for var in readVars(vars):
 
         print(var.type, var.chr, var.index, var.seq)
 
@@ -62,7 +71,7 @@ def modifySeq(fasta, variantFile):
 
         seqdict[var.chr] = newseq
 
-    fvar_path = f"./{os.path.splitext(os.path.basename(fasta))[0]}.var.fasta"
+    fvar_path = f"./{os.path.splitext(os.path.basename(fasta))[0]}.{prefix}.fasta"
     fout = open(fvar_path, "w")
     for id, seq in seqdict.items():
         fout.write(f">{id}\n{seq}\n")
@@ -90,9 +99,9 @@ def parseArgs(argv):
 
     parser.add_argument('script_path', action='store', help=argparse.SUPPRESS)
     parser.add_argument('fasta', action='store', help='A sequence file in FASTA format to introduce variants into and simulate reads from.')
-    parser.add_argument('variantFile', action='store', help='A file containing variants to introduce into the given sequence.')
     parser.add_argument('artDir', action='store', help='Directory containing ART executables.')
 
+    parser.add_argument('-v', '--vars', action='store', required=True, help='Either a file containing variants, or a single variant line, to introduce into the given sequence.')
     parser.add_argument('-p', '--prefix', action='store', default="varSim", help='Prefix for output files. Default=varSim.')
 
     args = parser.parse_args(argv)
@@ -102,7 +111,8 @@ def main(argv):
     """ Main function
     """
     args = parseArgs(argv)
-    fvar_path = modifySeq(args.fasta, args.variantFile)
+
+    fvar_path = modifySeq(args.fasta, args.vars, args.prefix)
     runART(fvar_path, args.artDir, args.prefix)
 
 if __name__=="__main__":
