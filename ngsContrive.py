@@ -26,7 +26,7 @@ def readVarFile(variantFile):
         for line in fin.readlines():
             varbox.append(Var(line))
 
-    return sorted(varbox, key=lambda x: x.index)
+    return sorted(varbox, key=lambda x: x.index, reverse=True)
 
 def modifySeq(fasta, variantFile):
     """ introduces variants defined in a variant file into sequences found in the fasta file.
@@ -34,10 +34,9 @@ def modifySeq(fasta, variantFile):
     seqdict = {rec.id : rec.seq for rec in SeqIO.parse(fasta, "fasta")}
 
     variants=0
-    offset=0
     for var in readVarFile(variantFile):
 
-        # print(var.type, var.chr, var.index, var.seq)
+        print(var.type, var.chr, var.index, var.seq)
 
         ## check index is in range
         if var.index >= len(seqdict[var.chr]):
@@ -45,22 +44,21 @@ def modifySeq(fasta, variantFile):
             continue
 
         newseq = seqdict[var.chr]
-        real_index = var.index+offset
+        real_index = var.index-1
 
         if var.type == "INDEL":
             variants+=1
             if var.seq.startswith("-"):
                 ## deal with deletions
-                offset-=len(var.seq)
                 newseq = newseq[:real_index] + newseq[real_index+len(var.seq):]
             else:
                 ## deal with insertions
-                offset+=len(var.seq)
                 newseq = newseq[:real_index] + var.seq + newseq[real_index:]
 
-        elif var.type == "SNP":
+        elif var.type == "SP":
+            ## deal with sequence polymorphisms
             variants+=1
-            newseq = newseq[:real_index-1] + var.seq + newseq[real_index:]
+            newseq = newseq[:real_index-1] + var.seq + newseq[real_index+len(var.seq)-1:]
 
         seqdict[var.chr] = newseq
 
@@ -70,6 +68,9 @@ def modifySeq(fasta, variantFile):
         fout.write(f">{id}\n{seq}\n")
 
     print(f"FASTA IN : {fasta}\nVARIANTS INTRODUCED : {variants}\nFASTA OUT : {fvar_path}\n")
+
+    # for id, seq in seqdict.items():
+    #     print(id, "\t", seq)
 
     return fvar_path
 
