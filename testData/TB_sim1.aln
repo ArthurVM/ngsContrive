@@ -1,6 +1,0 @@
-##ART_Illumina	read_length	150
-@CM	/home/amorris/BioInf/art_bin_MountRainier/art_illumina -ss HS25 -i ./test.var.fasta -p -l 150 -f 40 -m 200 -s 10 -o TB_sim -rs 1637934228
-@SQ	chr0	59
-@SQ	chr0v	64
-@SQ	chr1	49
-##Header End
