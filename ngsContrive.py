@@ -31,7 +31,6 @@ def readVars(vars):
         with open(vars, "r") as fin:
             for line in fin.readlines():
                 varbox.append(Var(line))
-
     else:
         varbox.append(Var(vars))
 
@@ -83,12 +82,12 @@ def modifySeq(fasta, vars, prefix):
 
     return fvar_path
 
-def runART(fvar_path, artDir, prefix):
+def runART(fvar_path, artDir, prefix, doc):
     """ Run ART on the simulated variant file
     """
 
     artExec = os.path.join(artDir, "art_illumina")
-    runline = f"{artExec} -ss HS25 -i {fvar_path} -p -l 150 -f 40 -m 200 -s 10 -o {prefix}"
+    runline = f"{artExec} -ss HS25 -i {fvar_path} -p -l 150 -f {doc} -m 200 -s 10 -o {prefix}"
 
     subprocess.run(runline, shell=True, check=True, capture_output=True)
 
@@ -101,8 +100,9 @@ def parseArgs(argv):
     parser.add_argument('fasta', action='store', help='A sequence file in FASTA format to introduce variants into and simulate reads from.')
     parser.add_argument('artDir', action='store', help='Directory containing ART executables.')
 
-    parser.add_argument('-v', '--vars', action='store', required=True, help='Either a file containing variants, or a single variant line, to introduce into the given sequence.')
+    parser.add_argument('-v', '--vars', action='store', default="", help='Either a file containing variants, or a single variant line, to introduce into the given sequence.')
     parser.add_argument('-p', '--prefix', action='store', default="varSim", help='Prefix for output files. Default=varSim.')
+    parser.add_argument('-d', '--doc', action='store', default=40, help='Mean depth of coverage for simualted reads.')
 
     args = parser.parse_args(argv)
     return args
@@ -112,8 +112,12 @@ def main(argv):
     """
     args = parseArgs(argv)
 
-    fvar_path = modifySeq(args.fasta, args.vars, args.prefix)
-    runART(fvar_path, args.artDir, args.prefix)
+    if args.vars != "":
+        fvar_path = modifySeq(args.fasta, args.vars, args.prefix)
+    else:
+        fvar_path = args.fasta
+        
+    runART(fvar_path, args.artDir, args.prefix, args.doc)
 
 if __name__=="__main__":
     main(sys.argv)

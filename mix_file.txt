@@ -1,0 +1,10 @@
+Bsubtilis40x 0.1
+Calbicans40x 0.1
+Cdiff40x 0.1
+Corynebacterium_glutamicum40x 0.1
+Cparvum40x 0.1
+Cutibacterium_acnes40x 0.1
+Ecoli40x 0.1
+Saureus40x 0.1
+Scerevisiae40x 0.1
+TB_ref40x 0.1
