@@ -1,6 +1,8 @@
 import sys
 import re
 import argparse
+import time
+import random
 from math import ceil
 from os import path
 from collections import defaultdict
@@ -52,22 +54,27 @@ def parseMixFile(mix_file):
 
     return prop_dict
 
-def getReads(fqpath, numreads):
+def getReads(fqpath, numreads, seed):
     """ gets n reads from a fastq file
     """
     fqbox = []
-    for i, read in enumerate(SeqIO.parse(fqpath, "fastq")):
-        if i == numreads:
-            break
-        else:
-            fqbox.append(read)
+    random.seed(seed)
+    reads = list(SeqIO.parse(fqpath, "fastq"))
+    # print(list(reads))
+    fqbox = random.sample(reads, numreads)
+
+    # for i, read in enumerate(SeqIO.parse(fqpath, "fastq")):
+    #     if i == numreads:
+    #         break
+    #     else:
+    #         fqbox.append(read)
 
     return fqbox
 
 def flatten(t):
     return [item for sublist in t for item in sublist]
 
-def genDataset(prop_dict, input_dir, total_reads, out):
+def genDataset(prop_dict, input_dir, total_reads, out, seed):
     forward_reads = []
     reverse_reads = []
 
@@ -77,8 +84,8 @@ def genDataset(prop_dict, input_dir, total_reads, out):
         f_path = path.join(input_dir, f"{id}_1.fq")
         r_path = path.join(input_dir, f"{id}_2.fq")
 
-        forward_reads.append(getReads(f_path, numreads))
-        reverse_reads.append(getReads(r_path, numreads))
+        forward_reads.append(getReads(f_path, numreads, seed))
+        reverse_reads.append(getReads(r_path, numreads, seed))
 
     SeqIO.write(flatten(forward_reads), f"{out}_1.fq", "fastq")
     SeqIO.write(flatten(reverse_reads), f"{out}_2.fq", "fastq")
@@ -92,15 +99,18 @@ def parseArgs(argv):
     parser.add_argument('mix_file', action='store', type=isFile, help='A file containing contaminant read proportions.')
     parser.add_argument('input_dir', action='store', type=isDir, help='Input directory containing contaminant paired end read files.')
     parser.add_argument('total_reads', action='store', type=int, help='The total number of reads for dataset construction (in 10^3).')
+
     parser.add_argument('-o', '--out_prefix', action='store', default=sys.stdout, help='Prefix for output file.')
+    parser.add_argument('-s', '--seed', action='store', default=time.time(), help='Seed for random int generator.')
 
     args = parser.parse_args(argv)
     return args
 
 def main(argv):
     args = parseArgs(argv)
+    print(f"SEED FOR THIS RUN : {args.seed}")
     prop_dict = parseMixFile(args.mix_file)
-    genDataset(prop_dict, args.input_dir, args.total_reads, args.out_prefix)
+    genDataset(prop_dict, args.input_dir, args.total_reads, args.out_prefix, args.seed)
 
 if __name__=="__main__":
     main(sys.argv)
