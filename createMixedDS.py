@@ -4,6 +4,7 @@ import argparse
 import time
 import random
 from math import ceil
+from time import localtime, strftime
 from os import path
 from collections import defaultdict
 from Bio import SeqIO
@@ -49,7 +50,8 @@ def parseMixFile(mix_file):
 
     sumprop = sum([prop for id, prop in prop_dict.items()])
     if round(sumprop, 4) != 1:
-        print(f"The summed proportions do not equal 1 ({sumprop}). Please check the mix file.")
+        # TODO: this is a bit of a gross way of doing this
+        print(f"The summed proportions do not equal 1 ({sumprop}). Please check the mix file.", file=sys.stdout)
         sys.exit(1)
 
     return prop_dict
@@ -57,17 +59,12 @@ def parseMixFile(mix_file):
 def getReads(fqpath, numreads, seed):
     """ gets n reads from a fastq file
     """
+    # TODO: need to test that a provided random seed is generating reads consistently
     fqbox = []
     random.seed(seed)
     reads = list(SeqIO.parse(fqpath, "fastq"))
     # print(list(reads))
     fqbox = random.sample(reads, numreads)
-
-    # for i, read in enumerate(SeqIO.parse(fqpath, "fastq")):
-    #     if i == numreads:
-    #         break
-    #     else:
-    #         fqbox.append(read)
 
     return fqbox
 
@@ -80,7 +77,7 @@ def genDataset(prop_dict, input_dir, total_reads, out, seed):
 
     for id, p in prop_dict.items():
         numreads = ceil((total_reads*p)*1000)
-        # print(f"Getting {numreads} reads from {id}")
+        print(f"Getting {numreads} (prop={p}) reads from {id}", file=sys.stdout)
         f_path = path.join(input_dir, f"{id}_1.fq")
         r_path = path.join(input_dir, f"{id}_2.fq")
 
