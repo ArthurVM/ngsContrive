@@ -1,0 +1,19 @@
+---
+title: "TB_resistence"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+res <- read.csv("/home/amorris/BioInf/ngsContrive/TB_resistance_catalogue/rescatalogue.csv", sep=",", quote="")
+summary(res)
+```
+
+## get resistances
+
+```{r RIF}
+RIFtab <- res$RIF_Conf_Grade=="1) Assoc w R"
+RIFtab[is.na(RIFtab)] <- FALSE
+newline <- c("SP", res$final_annotation.Reference[RIFtab], res$final_annotation.Position[RIFtab], res$final_annotation.AlternativeNucleotide[RIFtab])
+```

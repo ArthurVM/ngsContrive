@@ -66,7 +66,7 @@ def modifySeq(fasta, vars, prefix):
         elif var.type == "SP":
             ## deal with sequence polymorphisms
             variants+=1
-            newseq = newseq[:real_index-1] + var.seq + newseq[real_index+len(var.seq)-1:]
+            newseq = newseq[:real_index] + var.seq + newseq[real_index+len(var.seq):]
 
         seqdict[var.chr] = newseq
 
@@ -116,7 +116,7 @@ def main(argv):
         fvar_path = modifySeq(args.fasta, args.vars, args.prefix)
     else:
         fvar_path = args.fasta
-        
+
     runART(fvar_path, args.artDir, args.prefix, args.doc)
 
 if __name__=="__main__":
